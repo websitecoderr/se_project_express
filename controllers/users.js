@@ -1,9 +1,13 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const AppError = require("../errors/AppError");
 const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
 const { logger } = require("../middlewares/logger");
+const BadRequestError = require("../errors/BadRequestError");
+const UnauthorizedError = require("../errors/UnauthorizedError");
+const ServerError = require("../errors/ServerError");
+const NotFoundError = require("../errors/NotFoundError");
+const ConflictError = require("../errors/ConflictError");
 
 const STATUS_CODES = {
   OK: 200,
@@ -21,7 +25,7 @@ const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      throw new AppError("Email and password are required", STATUS_CODES.BAD_REQUEST);
+      throw new BadRequestError("Email and password are required");
     }
 
     const user = await User.findOne({ email }).select("+password");
@@ -31,7 +35,7 @@ const login = async (req, res, next) => {
         email,
         context: "login",
       });
-      throw new AppError("Incorrect email or password", STATUS_CODES.UNAUTHORIZED);
+      throw new UnauthorizedError("Incorrect email or password");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -41,7 +45,7 @@ const login = async (req, res, next) => {
         userId: user._id,
         context: "login",
       });
-      throw new AppError("Incorrect email or password", STATUS_CODES.UNAUTHORIZED);
+      throw new UnauthorizedError("Incorrect email or password");
     }
 
     const token = jwt.sign(
@@ -70,7 +74,7 @@ const login = async (req, res, next) => {
       stack: error.stack,
       context: "login",
     });
-    return next(new AppError("Internal server error", STATUS_CODES.SERVER_ERROR));
+    return next(new ServerError("Internal server error"));
   }
 };
 
@@ -80,7 +84,7 @@ const getCurrentUser = async (req, res, next) => {
     const user = await User.findById(req.user._id);
 
     if (!user) {
-      throw new AppError("User not found", STATUS_CODES.NOT_FOUND);
+      throw new NotFoundError("User not found");
     }
 
     return res.status(STATUS_CODES.OK).json(user);
@@ -90,7 +94,7 @@ const getCurrentUser = async (req, res, next) => {
       stack: error.stack,
       context: "getCurrentUser",
     });
-    return next(new AppError("Error retrieving user", STATUS_CODES.SERVER_ERROR));
+    return next(new ServerError("Error retrieving user"));
   }
 };
 
@@ -100,16 +104,16 @@ const createUser = async (req, res, next) => {
     const { name, email, password, avatar } = req.body;
 
     if (!name || !email || !password || !avatar) {
-      throw new AppError("All fields are required", STATUS_CODES.BAD_REQUEST);
+      throw new BadRequestError("All fields are required");
     }
 
     if (name.length < 2 || name.length > 30) {
-      throw new AppError("Name must be between 2 and 30 characters", STATUS_CODES.BAD_REQUEST);
+      throw new BadRequestError("Name must be between 2 and 30 characters");
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      throw new AppError("Email already in use", STATUS_CODES.CONFLICT);
+      throw new ConflictError("Email already in use");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -149,10 +153,10 @@ const createUser = async (req, res, next) => {
     });
 
     if (error.name === "ValidationError") {
-      return next(new AppError("Bad request: Invalid user data", STATUS_CODES.BAD_REQUEST));
+      return next(new BadRequestError("Bad request: Invalid user data"));
     }
 
-    return next(new AppError("Internal server error", STATUS_CODES.SERVER_ERROR));
+    return next(new ServerError("Internal server error"));
   }
 };
 
@@ -171,7 +175,7 @@ const updateCurrentUser = async (req, res, next) => {
     }).select("-password");
 
     if (!updatedUser) {
-      throw new AppError("User not found", STATUS_CODES.NOT_FOUND);
+      throw new NotFoundError("User not found");
     }
 
     return res.status(STATUS_CODES.OK).json(updatedUser);
@@ -183,10 +187,10 @@ const updateCurrentUser = async (req, res, next) => {
     });
 
     if (error.name === "ValidationError") {
-      return next(new AppError("Invalid data passed", STATUS_CODES.BAD_REQUEST));
+      return next(new BadRequestError("Invalid data passed"));
     }
 
-    return next(new AppError("Internal server error", STATUS_CODES.SERVER_ERROR));
+    return next(new ServerError("Internal server error"));
   }
 };
 
