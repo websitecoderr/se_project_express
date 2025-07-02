@@ -1,156 +1,118 @@
 const ClothingItem = require("../models/clothingItem");
-const { validateId } = require("../utils/validators");
-const { logger } = require("../middlewares/logger");
-const {
-  BAD_REQUEST,
-  NOT_FOUND,
-  FORBIDDEN,
-  SERVER_ERROR,
-  CREATED,
-  OK,
-} = require("../utils/statusCodes");
 
-const createItem = async (req, res) => {
-  const owner = req.user._id;
+const BadRequestError = require("../errors/BadRequestError");
+const NotFoundError = require("../errors/NotFoundError");
+const ForbiddenError = require("../errors/ForbiddenError");
+
+const STATUS_CODES = {
+  OK: 200,
+  CREATED: 201,
+};
+
+const getItems = async (req, res, next) => {
   try {
-    const { name, imageUrl, weather } = req.body;
+    const items = await ClothingItem.find({}).populate("owner", "-password");
+    return res.status(STATUS_CODES.OK).json(items);
+  } catch (err) {
+    return next(err);
+  }
+};
 
-    if (!name || !weather) {
-      return res
-        .status(BAD_REQUEST)
-        .json({ message: "Name and weather are required" });
+const createItem = async (req, res, next) => {
+  try {
+    const { name, weather } = req.body;
+
+    if (!name || !weather || !req.file) {
+      throw new BadRequestError("Name, weather, and image are required");
     }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
 
     const newItem = await ClothingItem.create({
       name,
       weather,
       imageUrl,
-      owner,
+      owner: req.user._id,
     });
 
-    return res.status(CREATED).json(newItem);
+    return res.status(STATUS_CODES.CREATED).json(newItem);
   } catch (err) {
-    logger.error("Error creating item", {
-      message: err.message,
-      stack: err.stack,
-      context: "createItem",
-    });
-    return res.status(SERVER_ERROR).json({ message: "Internal server error" });
+    if (err.name === "ValidationError") {
+      return next(new BadRequestError("Invalid item data"));
+    }
+    return next(err);
   }
 };
 
-const getItems = async (req, res) => {
-  try {
-    const items = await ClothingItem.find({});
-    return res.status(OK).json(items);
-  } catch (err) {
-    logger.error("Error retrieving items", {
-      message: err.message,
-      stack: err.stack,
-      context: "getItems",
-    });
-    return res
-      .status(SERVER_ERROR)
-      .json({ message: "Failed to retrieve items" });
-  }
-};
-
-const likeItem = async (req, res) => {
+const deleteItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
 
-    if (!validateId(itemId)) {
-      return res.status(BAD_REQUEST).json({ message: "Invalid item ID" });
+    const item = await ClothingItem.findById(itemId);
+    if (!item) {
+      throw new NotFoundError("Item not found");
     }
 
+    if (item.owner.toString() !== req.user._id) {
+      throw new ForbiddenError("You are not authorized to delete this item");
+    }
+
+    await item.deleteOne();
+    return res.status(STATUS_CODES.OK).json({ message: "Item deleted successfully" });
+  } catch (err) {
+    if (err.name === "CastError") {
+      return next(new BadRequestError("Invalid item ID"));
+    }
+    return next(err);
+  }
+};
+
+const likeItem = async (req, res, next) => {
+  try {
     const item = await ClothingItem.findByIdAndUpdate(
-      itemId,
+      req.params.itemId,
       { $addToSet: { likes: req.user._id } },
       { new: true }
     );
 
     if (!item) {
-      return res.status(NOT_FOUND).json({ message: "Item not found" });
+      throw new NotFoundError("Item not found");
     }
 
-    return res.status(OK).json(item);
+    return res.status(STATUS_CODES.OK).json(item);
   } catch (err) {
-    logger.error("Error liking item", {
-      message: err.message,
-      stack: err.stack,
-      context: "likeItem",
-    });
-    return res.status(SERVER_ERROR).json({ message: "Error updating item" });
+    if (err.name === "CastError") {
+      return next(new BadRequestError("Invalid item ID"));
+    }
+    return next(err);
   }
 };
 
-const dislikeItem = async (req, res) => {
+const dislikeItem = async (req, res, next) => {
   try {
-    const { itemId } = req.params;
-
-    if (!validateId(itemId)) {
-      return res.status(BAD_REQUEST).json({ message: "Invalid item ID" });
-    }
-
     const item = await ClothingItem.findByIdAndUpdate(
-      itemId,
+      req.params.itemId,
       { $pull: { likes: req.user._id } },
       { new: true }
     );
 
     if (!item) {
-      return res.status(NOT_FOUND).json({ message: "Item not found" });
+      throw new NotFoundError("Item not found");
     }
 
-    return res.status(OK).json(item);
+    return res.status(STATUS_CODES.OK).json(item);
   } catch (err) {
-    logger.error("Error disliking item", {
-      message: err.message,
-      stack: err.stack,
-      context: "dislikeItem",
-    });
-    return res.status(SERVER_ERROR).json({ message: "Failed to dislike item" });
-  }
-};
-
-const deleteItem = async (req, res) => {
-  try {
-    const { itemId } = req.params;
-
-    if (!validateId(itemId)) {
-      return res
-        .status(BAD_REQUEST)
-        .json({ message: "Invalid item ID format" });
+    if (err.name === "CastError") {
+      return next(new BadRequestError("Invalid item ID"));
     }
-
-    const item = await ClothingItem.findById(itemId);
-
-    if (!item) {
-      return res.status(NOT_FOUND).json({ message: "Item not found" });
-    }
-
-    if (item.owner.toString() !== req.user._id.toString()) {
-      return res
-        .status(FORBIDDEN)
-        .json({ message: "You are not authorized to delete this item" });
-    }
-
-    await ClothingItem.findByIdAndDelete(itemId);
-    return res.status(OK).json({ message: "Item deleted successfully" });
-  } catch (err) {
-    logger.error("Error deleting item", {
-      message: err.message,
-      stack: err.stack,
-      context: "deleteItem",
-    });
-    return res.status(SERVER_ERROR).json({ message: "Internal server error" });
+    return next(err);
   }
 };
 
 module.exports = {
   createItem,
   getItems,
+  deleteItem,
   likeItem,
   dislikeItem,
-  deleteItem,
 };
