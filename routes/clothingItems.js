@@ -1,9 +1,5 @@
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const {
-  createItem,
   getItems,
   likeItem,
   dislikeItem,
@@ -12,8 +8,6 @@ const {
 const auth = require("../middlewares/auth");
 
 const router = express.Router();
-
-
 
 router.get("/", getItems);
 router.delete("/:itemId", auth, deleteItem);
