@@ -1,5 +1,6 @@
-const logger = require("../logger");
+const { logger } = require("./logger");
 
+// eslint-disable-next-line no-unused-vars
 module.exports = (err, req, res, next) => {
   logger.error("🔥 Unhandled error", {
     message: err.message,
@@ -16,3 +17,4 @@ module.exports = (err, req, res, next) => {
 
   res.status(statusCode).json({ message });
 };
+

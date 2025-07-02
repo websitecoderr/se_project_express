@@ -1,7 +1,6 @@
 const ClothingItem = require("../models/clothingItem");
 const { validateId } = require("../utils/validators");
-const logger = require("../logger");
-
+const { logger } = require("../middlewares/logger");
 const {
   BAD_REQUEST,
   NOT_FOUND,

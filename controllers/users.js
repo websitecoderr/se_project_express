@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const AppError = require("../errors/AppError");
 const User = require("../models/user");
 const { JWT_SECRET } = require("../utils/config");
-const logger = require("../logger"); 
+const { logger } = require("../middlewares/logger");
 
 const STATUS_CODES = {
   OK: 200,
@@ -14,6 +14,7 @@ const STATUS_CODES = {
   SERVER_ERROR: 500,
   CONFLICT: 409,
 };
+
 
 const login = async (req, res, next) => {
   try {
@@ -73,6 +74,7 @@ const login = async (req, res, next) => {
   }
 };
 
+
 const getCurrentUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -91,6 +93,7 @@ const getCurrentUser = async (req, res, next) => {
     return next(new AppError("Error retrieving user", STATUS_CODES.SERVER_ERROR));
   }
 };
+
 
 const createUser = async (req, res, next) => {
   try {
@@ -153,6 +156,7 @@ const createUser = async (req, res, next) => {
   }
 };
 
+
 const updateCurrentUser = async (req, res, next) => {
   try {
     const { name, avatar } = req.body;
@@ -185,6 +189,7 @@ const updateCurrentUser = async (req, res, next) => {
     return next(new AppError("Internal server error", STATUS_CODES.SERVER_ERROR));
   }
 };
+
 
 module.exports = {
   getCurrentUser,

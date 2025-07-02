@@ -1,40 +1,40 @@
-const winston = require('winston');
-const expressWinston = require('express-winston');
+const { createLogger, format, transports } = require("winston");
+const expressWinston = require("express-winston");
+const path = require("path");
 
-const messageFormat = winston.format.combine(
-  winston.format.timestamp(),
-  winston.format.printf(
-    ({ level, message, meta, timestamp }) =>
-      `${timestamp} ${level}: ${meta?.error?.stack || message}`
-  )
-);
+const logDir = "logs";
+const errorLog = path.join(logDir, "error.log");
+const combinedLog = path.join(logDir, "combined.log");
+
+const logger = createLogger({
+  level: "info",
+  format: format.combine(
+    format.timestamp(),
+    format.errors({ stack: true }),
+    format.json()
+  ),
+  transports: [
+    new transports.Console(),
+    new transports.File({ filename: combinedLog }),
+    new transports.File({ filename: errorLog, level: "error" }),
+  ],
+});
 
 const requestLogger = expressWinston.logger({
-  transports: [
-    new winston.transports.Console({
-      format: messageFormat,
-    }),
-    new winston.transports.File({
-      filename: 'request.log',
-      format: winston.format.json(),
-    }),
-  ],
+  winstonInstance: logger,
   meta: true,
-  msg: '{{req.method}} {{req.url}} {{res.statusCode}} {{res.responseTime}}ms',
-  expressFormat: false,
+  msg: "HTTP {{req.method}} {{req.url}}",
+  expressFormat: true,
   colorize: false,
+  ignoreRoute: () => false,
 });
 
 const errorLogger = expressWinston.errorLogger({
-  transports: [
-    new winston.transports.File({
-      filename: 'error.log',
-      format: winston.format.json(),
-    }),
-  ],
+  winstonInstance: logger,
 });
 
 module.exports = {
+  logger,
   requestLogger,
   errorLogger,
 };

@@ -16,7 +16,7 @@ const errorHandler = require("./middlewares/error-handler");
 const { PORT = 3001, MONGO_URI = "mongodb://127.0.0.1:27017/wtwrDB" } =
   process.env;
 const { NOT_FOUND } = require("./utils/statusCodes");
-const logger = require("./logger"); 
+const { logger } = require("./middlewares/logger");
 
 const app = express();
 
