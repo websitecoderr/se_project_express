@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
 const ClothingItem = require("../models/clothingItem");
 const { validateId } = require("../utils/validators");
+const logger = require("../logger");
 
 const {
   BAD_REQUEST,
@@ -31,7 +31,11 @@ const createItem = async (req, res) => {
 
     return res.status(CREATED).json(newItem);
   } catch (err) {
-    console.error("Error creating item:", err);
+    logger.error("Error creating item", {
+      message: err.message,
+      stack: err.stack,
+      context: "createItem",
+    });
     return res.status(SERVER_ERROR).json({ message: "Internal server error" });
   }
 };
@@ -41,7 +45,11 @@ const getItems = async (req, res) => {
     const items = await ClothingItem.find({});
     return res.status(OK).json(items);
   } catch (err) {
-    console.error("Error retrieving items:", err);
+    logger.error("Error retrieving items", {
+      message: err.message,
+      stack: err.stack,
+      context: "getItems",
+    });
     return res
       .status(SERVER_ERROR)
       .json({ message: "Failed to retrieve items" });
@@ -68,7 +76,11 @@ const likeItem = async (req, res) => {
 
     return res.status(OK).json(item);
   } catch (err) {
-    console.error("Error liking item:", err);
+    logger.error("Error liking item", {
+      message: err.message,
+      stack: err.stack,
+      context: "likeItem",
+    });
     return res.status(SERVER_ERROR).json({ message: "Error updating item" });
   }
 };
@@ -93,7 +105,11 @@ const dislikeItem = async (req, res) => {
 
     return res.status(OK).json(item);
   } catch (err) {
-    console.error("Error disliking item:", err);
+    logger.error("Error disliking item", {
+      message: err.message,
+      stack: err.stack,
+      context: "dislikeItem",
+    });
     return res.status(SERVER_ERROR).json({ message: "Failed to dislike item" });
   }
 };
@@ -123,7 +139,11 @@ const deleteItem = async (req, res) => {
     await ClothingItem.findByIdAndDelete(itemId);
     return res.status(OK).json({ message: "Item deleted successfully" });
   } catch (err) {
-    console.error("Error deleting item:", err);
+    logger.error("Error deleting item", {
+      message: err.message,
+      stack: err.stack,
+      context: "deleteItem",
+    });
     return res.status(SERVER_ERROR).json({ message: "Internal server error" });
   }
 };

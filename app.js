@@ -12,9 +12,11 @@ const userRoutes = require("./routes/users");
 const itemRoutes = require("./routes/clothingItems");
 const { login, createUser } = require("./controllers/users");
 const errorHandler = require("./middlewares/error-handler");
+
 const { PORT = 3001, MONGO_URI = "mongodb://127.0.0.1:27017/wtwrDB" } =
   process.env;
 const { NOT_FOUND } = require("./utils/statusCodes");
+const logger = require("./logger"); 
 
 const app = express();
 
@@ -24,9 +26,11 @@ app.use(requestLogger);
 
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB"))
+  .then(() => {
+    logger.info("✅ Connected to MongoDB");
+  })
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
+    logger.error("❌ MongoDB connection error", { message: err.message, stack: err.stack });
     process.exit(1);
   });
 
@@ -51,16 +55,17 @@ app.use(errorLogger);
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server is running at http://127.0.0.1:${PORT}`);
+  logger.info(`🚀 Server is running at http://127.0.0.1:${PORT}`);
 });
 
 process.on("SIGINT", async () => {
   await mongoose.disconnect();
-  console.log("🛑 MongoDB disconnected via app termination");
+  logger.info("🛑 MongoDB disconnected via app termination");
   server.close(() => {
-    console.log("🔌 Server stopped");
+    logger.info("🔌 Server stopped");
     process.exit(0);
   });
 });
 
 module.exports = app;
+
