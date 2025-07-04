@@ -20,13 +20,11 @@ const getItems = async (req, res, next) => {
 
 const createItem = async (req, res, next) => {
   try {
-    const { name, weather } = req.body;
+    const { name, weather, imageUrl } = req.body;
 
-    if (!name || !weather || !req.file) {
-      throw new BadRequestError("Name, weather, and image are required");
+    if (!name || !weather || !imageUrl) {
+      throw new BadRequestError("Name, weather, and imageUrl are required");
     }
-
-    const imageUrl = `/uploads/${req.file.filename}`;
 
     const newItem = await ClothingItem.create({
       name,
@@ -47,8 +45,8 @@ const createItem = async (req, res, next) => {
 const deleteItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
-
     const item = await ClothingItem.findById(itemId);
+
     if (!item) {
       throw new NotFoundError("Item not found");
     }

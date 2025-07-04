@@ -1,3 +1,5 @@
+const {celebrate, Joi} = require('celebrate')
+
 const validateName = (name) => {
   if (!name) return { valid: false, message: "Name is required" };
   if (name.length < 2)
@@ -17,4 +19,25 @@ const validateURL = (url) => {
 
 const validateId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
-module.exports = { validateName, validateURL, validateId };
+const updateUserValidator = celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    avatar: Joi.string().uri(),
+  }),
+});
+const validateCreateItem = celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().required().min(2).max(30),
+    weather: Joi.string().valid("hot", "warm", "cold").required(),
+    imageUrl: Joi.string().required().uri(),
+  }),
+});
+
+const validateItemId = celebrate({
+  params: Joi.object().keys({
+    id: Joi.string().hex().length(24).required(),
+  }),
+});
+
+
+module.exports = { validateName, validateURL, validateId, updateUserValidator , validateCreateItem, validateItemId};

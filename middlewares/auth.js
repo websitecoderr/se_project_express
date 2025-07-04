@@ -9,18 +9,25 @@ const auth = (req, res, next) => {
     throw new UnauthorizedError("Authorization required");
   }
 
-  const token = authorization.replace("Bearer ", "");
+  const token = authorization.replace("Bearer ", "").trim();
+
+  if (token.split(".").length !== 3) {
+    console.error("Malformed token received:", token);
+    throw new UnauthorizedError("Invalid token format");
+  }
 
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
     next();
   } catch (err) {
+    console.error("JWT verification failed:", err.message);
     throw new UnauthorizedError("Invalid token");
   }
 };
 
 module.exports = auth;
+
 
 
 
