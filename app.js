@@ -12,10 +12,12 @@ const userRoutes = require("./routes/users");
 const itemRoutes = require("./routes/clothingItems");
 const { login, createUser } = require("./controllers/users");
 const errorHandler = require("./middlewares/error-handler");
+const NotFoundError = require("./errors/NotFoundError");
+
+
 
 const { PORT = 3001, MONGO_URI = "mongodb://127.0.0.1:27017/wtwrDB" } =
   process.env;
-const { NOT_FOUND } = require("./utils/statusCodes");
 const { logger } = require("./middlewares/logger");
 
 const app = express();
