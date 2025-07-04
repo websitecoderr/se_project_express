@@ -46,8 +46,8 @@ app.post("/api/signup", validateUserBody, createUser);
 app.use("/api/users", userRoutes);
 app.use("/api/items", itemRoutes);
 
-app.use((req, res) => {
-  res.status(NOT_FOUND).json({ message: "❌ Resource not found" });
+app.use((req, res, next) => {
+  next(new NotFoundError("❌ Resource not found"));
 });
 
 app.use(errors());

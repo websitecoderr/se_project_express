@@ -44,8 +44,8 @@ const createItem = async (req, res, next) => {
 
 const deleteItem = async (req, res, next) => {
   try {
-    const { itemId } = req.params;
-    const item = await ClothingItem.findById(itemId);
+    const { id } = req.params;
+    const item = await ClothingItem.findById(id);
 
     if (!item) {
       throw new NotFoundError("Item not found");
@@ -56,7 +56,9 @@ const deleteItem = async (req, res, next) => {
     }
 
     await item.deleteOne();
-    return res.status(STATUS_CODES.OK).json({ message: "Item deleted successfully" });
+    return res
+      .status(STATUS_CODES.OK)
+      .json({ message: "Item deleted successfully" });
   } catch (err) {
     if (err.name === "CastError") {
       return next(new BadRequestError("Invalid item ID"));
@@ -68,7 +70,7 @@ const deleteItem = async (req, res, next) => {
 const likeItem = async (req, res, next) => {
   try {
     const item = await ClothingItem.findByIdAndUpdate(
-      req.params.itemId,
+      req.params.id,
       { $addToSet: { likes: req.user._id } },
       { new: true }
     );
@@ -89,7 +91,7 @@ const likeItem = async (req, res, next) => {
 const dislikeItem = async (req, res, next) => {
   try {
     const item = await ClothingItem.findByIdAndUpdate(
-      req.params.itemId,
+      req.params.id,
       { $pull: { likes: req.user._id } },
       { new: true }
     );
